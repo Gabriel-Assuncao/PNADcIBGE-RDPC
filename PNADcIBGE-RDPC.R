@@ -6,7 +6,7 @@ rm(list=ls(all=TRUE))
 # Definindo limite de memória para compilação do programa
 aviso <- getOption("warn")
 options(warn=-1)
-memory.limit(size=20000)
+memory.limit(size=50000)
 options(warn=aviso)
 rm(aviso)
 
