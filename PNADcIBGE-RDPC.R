@@ -67,6 +67,9 @@ library("survey")
 # Obtendo microdados anuais por visita da PNAD Contínua (PNADcIBGE >= 0.6.0)
 pnadc_anual_visita <- get_pnadc(year=2019, interview=1, design=FALSE)
 
+# Realizando coleta de lixo acumulada durante a obtenção dos microdados
+gc(verbose=FALSE, reset=FALSE, full=TRUE)
+
 # Criando variáveis auxiliares para obtenção da estimativa desejada
 pnadc_anual_visita <- transform(pnadc_anual_visita, ID_DOMICILIO=paste0(UPA,V1008,V1014))
 pnadc_anual_visita <- transform(pnadc_anual_visita, Pais=as.factor("Brasil"))
