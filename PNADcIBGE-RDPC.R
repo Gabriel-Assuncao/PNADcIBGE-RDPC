@@ -100,6 +100,8 @@ pnadc_anual_visita <- transform(pnadc_anual_visita, VD5007real_proprioano=ifelse
 pnadc_anual_visita <- transform(pnadc_anual_visita, VD5008real_proprioano=ifelse(V2005=="Pensionista" | V2005=="Empregado(a) doméstico(a)" | V2005=="Parente do(a) empregado(a) doméstico(a)",NA,VD5008real_proprioano))
 pnadc_anual_visita <- transform(pnadc_anual_visita, VD5007real_ultimoano=ifelse(V2005=="Pensionista" | V2005=="Empregado(a) doméstico(a)" | V2005=="Parente do(a) empregado(a) doméstico(a)",NA,VD5007real_ultimoano))
 pnadc_anual_visita <- transform(pnadc_anual_visita, VD5008real_ultimoano=ifelse(V2005=="Pensionista" | V2005=="Empregado(a) doméstico(a)" | V2005=="Parente do(a) empregado(a) doméstico(a)",NA,VD5008real_ultimoano))
+
+# Realizando processo de incorporação do desenho amostral nos microdados
 pnadc_anual_visita <- as_tibble(pnadc_anual_visita)
 pnadc_anual_visita <- pnadc_design(data_pnadc=pnadc_anual_visita)
 
