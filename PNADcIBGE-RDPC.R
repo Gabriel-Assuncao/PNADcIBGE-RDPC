@@ -40,29 +40,29 @@ rm(aviso)
 
 # Definindo diretório de trabalho
 caminho <- getwd()
-setwd(caminho)
+setwd(dir=caminho)
 
 # Carregando pacotes necessários para obtenção da estimativa desejada
 if("PNADcIBGE" %in% rownames(installed.packages())==FALSE)
 {
-  install.packages("PNADcIBGE", dependencies=TRUE)
+  install.packages(pkgs="PNADcIBGE", dependencies=TRUE)
 }
-library("PNADcIBGE")
+library(package="PNADcIBGE", verbose=TRUE)
 if("dplyr" %in% rownames(installed.packages())==FALSE)
 {
-  install.packages("dplyr", dependencies=TRUE)
+  install.packages(pkgs="dplyr", dependencies=TRUE)
 }
-library("dplyr")
+library(package="dplyr", verbose=TRUE)
 if("tibble" %in% rownames(installed.packages())==FALSE)
 {
-  install.packages("tibble", dependencies=TRUE)
+  install.packages(pkgs="tibble", dependencies=TRUE)
 }
-library("tibble")
+library(package="tibble", verbose=TRUE)
 if("survey" %in% rownames(installed.packages())==FALSE)
 {
-  install.packages("survey", dependencies=TRUE)
+  install.packages(pkgs="survey", dependencies=TRUE)
 }
-library("survey")
+library(package="survey", verbose=TRUE)
 
 # Obtendo microdados anuais por visita da PNAD Contínua (PNADcIBGE >= 0.6.0)
 pnadc_anual_visita <- get_pnadc(year=2019, interview=1, design=FALSE)
@@ -73,9 +73,9 @@ gc(verbose=FALSE, reset=FALSE, full=TRUE)
 # Criando variáveis auxiliares para obtenção da estimativa desejada
 pnadc_anual_visita <- transform(pnadc_anual_visita, ID_DOMICILIO=paste0(UPA,V1008,V1014))
 pnadc_anual_visita <- transform(pnadc_anual_visita, Pais=as.factor("Brasil"))
-pnadc_anual_visita$Pais <- factor(pnadc_anual_visita$Pais, levels=c("Brasil"))
+pnadc_anual_visita$Pais <- factor(x=pnadc_anual_visita$Pais, levels=c("Brasil"))
 pnadc_anual_visita <- transform(pnadc_anual_visita, GR=as.factor(ifelse(substr(UPA, start=1, stop=1)=="1","Norte",ifelse(substr(UPA, start=1, stop=1)=="2","Nordeste",ifelse(substr(UPA, start=1, stop=1)=="3","Sudeste",ifelse(substr(UPA, start=1, stop=1)=="4","Sul",ifelse(substr(UPA, start=1, stop=1)=="5","Centro-Oeste",NA)))))))
-pnadc_anual_visita$GR <- factor(pnadc_anual_visita$GR, levels=c("Norte","Nordeste","Sudeste","Sul","Centro-Oeste"))
+pnadc_anual_visita$GR <- factor(x=pnadc_anual_visita$GR, levels=c("Norte","Nordeste","Sudeste","Sul","Centro-Oeste"))
 
 # Realizando processo de obtenção da estimativa do rendimento domiciliar real
 pnadc_anual_visita <- transform(pnadc_anual_visita, V2001_rendimento=ifelse(V2005=="Pensionista" | V2005=="Empregado(a) doméstico(a)" | V2005=="Parente do(a) empregado(a) doméstico(a)",NA,1))
@@ -83,7 +83,7 @@ pnadc_anual_visita <- transform(pnadc_anual_visita, VD4019real_proprioano=ifelse
 pnadc_anual_visita <- transform(pnadc_anual_visita, VD4048real_proprioano=ifelse(is.na(VD4048) | is.na(V2001_rendimento),NA,VD4048*CO1e))
 pnadc_anual_visita <- transform(pnadc_anual_visita, VD4019real_ultimoano=ifelse(is.na(VD4019) | is.na(V2001_rendimento),NA,VD4019*CO2))
 pnadc_anual_visita <- transform(pnadc_anual_visita, VD4048real_ultimoano=ifelse(is.na(VD4048) | is.na(V2001_rendimento),NA,VD4048*CO2e))
-pnadc_anual_visita_rendimento <- pnadc_anual_visita %>% group_by(ID_DOMICILIO) %>% summarise(moradores_rendimento=sum(V2001_rendimento, na.rm=TRUE),
+pnadc_anual_visita_rendimento <- pnadc_anual_visita %>% dplyr::group_by(ID_DOMICILIO) %>% dplyr::summarise(moradores_rendimento=sum(V2001_rendimento, na.rm=TRUE),
                                                                                        rendimento_todos_trabalhos_proprioano=sum(VD4019real_proprioano, na.rm=TRUE),
                                                                                        rendimento_outras_fontes_proprioano=sum(VD4048real_proprioano, na.rm=TRUE),
                                                                                        rendimento_todos_trabalhos_ultimoano=sum(VD4019real_ultimoano, na.rm=TRUE),
@@ -102,39 +102,40 @@ pnadc_anual_visita <- transform(pnadc_anual_visita, VD5007real_ultimoano=ifelse(
 pnadc_anual_visita <- transform(pnadc_anual_visita, VD5008real_ultimoano=ifelse(V2005=="Pensionista" | V2005=="Empregado(a) doméstico(a)" | V2005=="Parente do(a) empregado(a) doméstico(a)",NA,VD5008real_ultimoano))
 
 # Realizando processo de incorporação do desenho amostral nos microdados
-pnadc_anual_visita <- as_tibble(pnadc_anual_visita)
+pnadc_anual_visita <- tibble::as_tibble(x=pnadc_anual_visita)
 pnadc_anual_visita <- pnadc_design(data_pnadc=pnadc_anual_visita)
+str(object=pnadc_anual_visita)
 
 # Calculando a massa do rendimento mensal real domiciliar a preços médios do ano
-print(rendimento_domiciliar_total_proprioano <- svybys(formula=~VD5007real_proprioano, bys=~Pais+GR+UF, design=subset(pnadc_anual_visita, V2005=="Pessoa responsável pelo domicílio"), FUN=svytotal, na.rm=TRUE))
-print(list(cv(rendimento_domiciliar_total_proprioano[[1]]),cv(rendimento_domiciliar_total_proprioano[[2]]),cv(rendimento_domiciliar_total_proprioano[[3]])))
+print(x=rendimento_domiciliar_total_proprioano <- survey::svybys(formula=~VD5007real_proprioano, bys=~Pais+GR+UF, design=subset(pnadc_anual_visita, V2005=="Pessoa responsável pelo domicílio"), FUN=svytotal, na.rm=TRUE))
+print(x=list(cv(object=rendimento_domiciliar_total_proprioano[[1]]), cv(object=rendimento_domiciliar_total_proprioano[[2]]), cv(object=rendimento_domiciliar_total_proprioano[[3]])))
 
 # Calculando o rendimento médio mensal real domiciliar a preços médios do ano
-print(rendimento_domiciliar_media_proprioano <- svybys(formula=~VD5007real_proprioano, bys=~Pais+GR+UF, design=subset(pnadc_anual_visita, V2005=="Pessoa responsável pelo domicílio"), FUN=svymean, na.rm=TRUE))
-print(list(cv(rendimento_domiciliar_media_proprioano[[1]]),cv(rendimento_domiciliar_media_proprioano[[2]]),cv(rendimento_domiciliar_media_proprioano[[3]])))
+print(x=rendimento_domiciliar_media_proprioano <- survey::svybys(formula=~VD5007real_proprioano, bys=~Pais+GR+UF, design=subset(pnadc_anual_visita, V2005=="Pessoa responsável pelo domicílio"), FUN=svymean, na.rm=TRUE))
+print(x=list(cv(object=rendimento_domiciliar_media_proprioano[[1]]), cv(object=rendimento_domiciliar_media_proprioano[[2]]), cv(object=rendimento_domiciliar_media_proprioano[[3]])))
 
 # Calculando a massa do rendimento mensal real domiciliar per capita a preços médios do ano (SIDRA - Tabela 7428)
-print(rendimento_domiciliar_per_capita_total_proprioano <- svybys(formula=~VD5008real_proprioano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svytotal, na.rm=TRUE))
-print(list(cv(rendimento_domiciliar_per_capita_total_proprioano[[1]]),cv(rendimento_domiciliar_per_capita_total_proprioano[[2]]),cv(rendimento_domiciliar_per_capita_total_proprioano[[3]])))
+print(x=rendimento_domiciliar_per_capita_total_proprioano <- survey::svybys(formula=~VD5008real_proprioano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svytotal, na.rm=TRUE))
+print(x=list(cv(object=rendimento_domiciliar_per_capita_total_proprioano[[1]]), cv(object=rendimento_domiciliar_per_capita_total_proprioano[[2]]), cv(object=rendimento_domiciliar_per_capita_total_proprioano[[3]])))
 
 # Calculando o rendimento médio mensal real domiciliar per capita a preços médios do ano (SIDRA - Tabela 7531)
-print(rendimento_domiciliar_per_capita_media_proprioano <- svybys(formula=~VD5008real_proprioano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svymean, na.rm=TRUE))
-print(list(cv(rendimento_domiciliar_per_capita_media_proprioano[[1]]),cv(rendimento_domiciliar_per_capita_media_proprioano[[2]]),cv(rendimento_domiciliar_per_capita_media_proprioano[[3]])))
+print(x=rendimento_domiciliar_per_capita_media_proprioano <- survey::svybys(formula=~VD5008real_proprioano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svymean, na.rm=TRUE))
+print(x=list(cv(object=rendimento_domiciliar_per_capita_media_proprioano[[1]]), cv(object=rendimento_domiciliar_per_capita_media_proprioano[[2]]), cv(object=rendimento_domiciliar_per_capita_media_proprioano[[3]])))
 
 # Calculando a massa do rendimento mensal real domiciliar a preços médios do último ano
-print(rendimento_domiciliar_total_ultimoano <- svybys(formula=~VD5007real_ultimoano, bys=~Pais+GR+UF, design=subset(pnadc_anual_visita, V2005=="Pessoa responsável pelo domicílio"), FUN=svytotal, na.rm=TRUE))
-print(list(cv(rendimento_domiciliar_total_ultimoano[[1]]),cv(rendimento_domiciliar_total_ultimoano[[2]]),cv(rendimento_domiciliar_total_ultimoano[[3]])))
+print(x=rendimento_domiciliar_total_ultimoano <- survey::svybys(formula=~VD5007real_ultimoano, bys=~Pais+GR+UF, design=subset(pnadc_anual_visita, V2005=="Pessoa responsável pelo domicílio"), FUN=svytotal, na.rm=TRUE))
+print(x=list(cv(object=rendimento_domiciliar_total_ultimoano[[1]]), cv(object=rendimento_domiciliar_total_ultimoano[[2]]), cv(object=rendimento_domiciliar_total_ultimoano[[3]])))
 
 # Calculando o rendimento médio mensal real domiciliar a preços médios do último ano
-print(rendimento_domiciliar_media_ultimoano <- svybys(formula=~VD5007real_ultimoano, bys=~Pais+GR+UF, design=subset(pnadc_anual_visita, V2005=="Pessoa responsável pelo domicílio"), FUN=svymean, na.rm=TRUE))
-print(list(cv(rendimento_domiciliar_media_ultimoano[[1]]),cv(rendimento_domiciliar_media_ultimoano[[2]]),cv(rendimento_domiciliar_media_ultimoano[[3]])))
+print(x=rendimento_domiciliar_media_ultimoano <- survey::svybys(formula=~VD5007real_ultimoano, bys=~Pais+GR+UF, design=subset(pnadc_anual_visita, V2005=="Pessoa responsável pelo domicílio"), FUN=svymean, na.rm=TRUE))
+print(x=list(cv(object=rendimento_domiciliar_media_ultimoano[[1]]), cv(object=rendimento_domiciliar_media_ultimoano[[2]]), cv(object=rendimento_domiciliar_media_ultimoano[[3]])))
 
 # Calculando a massa do rendimento mensal real domiciliar per capita a preços médios do último ano (SIDRA - Tabela 7427)
-print(rendimento_domiciliar_per_capita_total_ultimoano <- svybys(formula=~VD5008real_ultimoano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svytotal, na.rm=TRUE))
-print(list(cv(rendimento_domiciliar_per_capita_total_ultimoano[[1]]),cv(rendimento_domiciliar_per_capita_total_ultimoano[[2]]),cv(rendimento_domiciliar_per_capita_total_ultimoano[[3]])))
+print(x=rendimento_domiciliar_per_capita_total_ultimoano <- survey::svybys(formula=~VD5008real_ultimoano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svytotal, na.rm=TRUE))
+print(x=list(cv(object=rendimento_domiciliar_per_capita_total_ultimoano[[1]]), cv(object=rendimento_domiciliar_per_capita_total_ultimoano[[2]]), cv(object=rendimento_domiciliar_per_capita_total_ultimoano[[3]])))
 
 # Calculando o rendimento médio mensal real domiciliar per capita a preços médios do último ano (SIDRA - Tabela 7533)
-print(rendimento_domiciliar_per_capita_media_ultimoano <- svybys(formula=~VD5008real_ultimoano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svymean, na.rm=TRUE))
-print(list(cv(rendimento_domiciliar_per_capita_media_ultimoano[[1]]),cv(rendimento_domiciliar_per_capita_media_ultimoano[[2]]),cv(rendimento_domiciliar_per_capita_media_ultimoano[[3]])))
+print(x=rendimento_domiciliar_per_capita_media_ultimoano <- survey::svybys(formula=~VD5008real_ultimoano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svymean, na.rm=TRUE))
+print(x=list(cv(object=rendimento_domiciliar_per_capita_media_ultimoano[[1]]), cv(object=rendimento_domiciliar_per_capita_media_ultimoano[[2]]), cv(object=rendimento_domiciliar_per_capita_media_ultimoano[[3]])))
 
 ##########################################################################
