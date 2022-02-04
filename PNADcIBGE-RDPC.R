@@ -65,7 +65,7 @@ if("survey" %in% rownames(installed.packages())==FALSE)
 library(package="survey", verbose=TRUE)
 
 # Obtendo microdados anuais por visita da PNAD Contínua (PNADcIBGE >= 0.6.0)
-pnadc_anual_visita <- get_pnadc(year=2019, interview=1, design=FALSE)
+pnadc_anual_visita <- PNADcIBGE::get_pnadc(year=2019, interview=1, labels=TRUE, deflator=TRUE, design=FALSE)
 
 # Realizando coleta de lixo acumulada durante a obtenção dos microdados
 gc(verbose=FALSE, reset=FALSE, full=TRUE)
@@ -103,7 +103,7 @@ pnadc_anual_visita <- transform(pnadc_anual_visita, VD5008real_ultimoano=ifelse(
 
 # Realizando processo de incorporação do desenho amostral nos microdados
 pnadc_anual_visita <- tibble::as_tibble(x=pnadc_anual_visita)
-pnadc_anual_visita <- pnadc_design(data_pnadc=pnadc_anual_visita)
+pnadc_anual_visita <- PNADcIBGE::pnadc_design(data_pnadc=pnadc_anual_visita)
 str(object=pnadc_anual_visita)
 
 # Calculando a massa do rendimento mensal real domiciliar a preços médios do ano
