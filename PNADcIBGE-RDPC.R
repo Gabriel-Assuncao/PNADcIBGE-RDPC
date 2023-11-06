@@ -63,6 +63,11 @@ if("survey" %in% rownames(installed.packages())==FALSE)
   install.packages(pkgs="survey", dependencies=TRUE)
 }
 library(package="survey", verbose=TRUE)
+if("convey" %in% rownames(installed.packages())==FALSE)
+{
+  install.packages(pkgs="convey", dependencies=TRUE)
+}
+library(package="convey", verbose=TRUE)
 
 # Obtendo microdados anuais por visita da PNAD Contínua (PNADcIBGE >= 0.6.0)
 pnadc_anual_visita <- PNADcIBGE::get_pnadc(year=2019, interview=1, labels=TRUE, deflator=TRUE, design=FALSE)
@@ -137,5 +142,17 @@ print(x=list(cv(object=rendimento_domiciliar_per_capita_total_ultimoano[[1]]), c
 # Calculando o rendimento médio mensal real domiciliar per capita a preços médios do último ano (SIDRA - Tabela 7533)
 print(x=rendimento_domiciliar_per_capita_media_ultimoano <- survey::svybys(formula=~VD5008real_ultimoano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svymean, na.rm=TRUE))
 print(x=list(cv(object=rendimento_domiciliar_per_capita_media_ultimoano[[1]]), cv(object=rendimento_domiciliar_per_capita_media_ultimoano[[2]]), cv(object=rendimento_domiciliar_per_capita_media_ultimoano[[3]])))
+
+# Calculando o índice de gini do rendimento mensal real domiciliar per capita per capita a preços médios do ano (SIDRA - Tabela 7435)
+pnadc_anual_visita <- convey::convey_prep(design=pnadc_anual_visita)
+print(x=indice_gini <- survey::svybys(formula=~VD5008real_proprioano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svygini, na.rm=TRUE))
+print(x=list(cv(object=indice_gini[[1]]), cv(object=indice_gini[[2]]), cv(object=indice_gini[[3]])))
+
+# Calculando proxy do coeficiente de desiquilíbrio regional com base no rendimento médio mensal real domiciliar per capita a preços médios do ano
+print(x=coeficiente_desequilibrio_regional_norte <- round(x=min(max(0,rendimento_domiciliar_per_capita_media_proprioano[[2]]$VD5008real_proprioano[1]/rendimento_domiciliar_per_capita_media_proprioano[[1]]$VD5008real_proprioano[1]),1), digits=2))
+print(x=coeficiente_desequilibrio_regional_nordeste <- round(x=min(max(0,rendimento_domiciliar_per_capita_media_proprioano[[2]]$VD5008real_proprioano[2]/rendimento_domiciliar_per_capita_media_proprioano[[1]]$VD5008real_proprioano[1]),1), digits=2))
+print(x=coeficiente_desequilibrio_regional_sudeste <- round(x=min(max(0,rendimento_domiciliar_per_capita_media_proprioano[[2]]$VD5008real_proprioano[3]/rendimento_domiciliar_per_capita_media_proprioano[[1]]$VD5008real_proprioano[1]),1), digits=2))
+print(x=coeficiente_desequilibrio_regional_sul <- round(x=min(max(0,rendimento_domiciliar_per_capita_media_proprioano[[2]]$VD5008real_proprioano[4]/rendimento_domiciliar_per_capita_media_proprioano[[1]]$VD5008real_proprioano[1]),1), digits=2))
+print(x=coeficiente_desequilibrio_regional_centrooeste <- round(x=min(max(0,rendimento_domiciliar_per_capita_media_proprioano[[2]]$VD5008real_proprioano[5]/rendimento_domiciliar_per_capita_media_proprioano[[1]]$VD5008real_proprioano[1]),1), digits=2))
 
 ##########################################################################
