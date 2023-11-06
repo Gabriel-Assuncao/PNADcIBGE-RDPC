@@ -143,7 +143,7 @@ print(x=list(cv(object=rendimento_domiciliar_per_capita_total_ultimoano[[1]]), c
 print(x=rendimento_domiciliar_per_capita_media_ultimoano <- survey::svybys(formula=~VD5008real_ultimoano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svymean, na.rm=TRUE))
 print(x=list(cv(object=rendimento_domiciliar_per_capita_media_ultimoano[[1]]), cv(object=rendimento_domiciliar_per_capita_media_ultimoano[[2]]), cv(object=rendimento_domiciliar_per_capita_media_ultimoano[[3]])))
 
-# Calculando o índice de gini do rendimento mensal real domiciliar per capita per capita a preços médios do ano (SIDRA - Tabela 7435)
+# Calculando o índice de Gini do rendimento mensal real domiciliar per capita per capita a preços médios do ano (SIDRA - Tabela 7435)
 pnadc_anual_visita <- convey::convey_prep(design=pnadc_anual_visita)
 print(x=indice_gini <- survey::svybys(formula=~VD5008real_proprioano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svygini, na.rm=TRUE))
 print(x=list(cv(object=indice_gini[[1]]), cv(object=indice_gini[[2]]), cv(object=indice_gini[[3]])))
