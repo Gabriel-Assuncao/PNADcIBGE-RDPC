@@ -69,6 +69,9 @@ if("convey" %in% rownames(installed.packages())==FALSE)
 }
 library(package="convey", verbose=TRUE)
 
+# Verificando manual de utilização da função para obtenção dos microdados
+help(topic="get_pnadc", package="PNADcIBGE")
+
 # Obtendo microdados anuais por visita da PNAD Contínua (PNADcIBGE >= 0.6.0)
 pnadc_anual_visita <- PNADcIBGE::get_pnadc(year=2019, interview=1, labels=TRUE, deflator=TRUE, design=FALSE)
 
