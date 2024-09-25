@@ -73,7 +73,7 @@ library(package="convey", verbose=TRUE)
 help(topic="get_pnadc", package="PNADcIBGE")
 
 # Obtendo microdados anuais por visita da PNAD Contínua (PNADcIBGE >= 0.6.0)
-pnadc_anual_visita <- PNADcIBGE::get_pnadc(year=2019, interview=1, labels=TRUE, deflator=TRUE, design=FALSE)
+pnadc_anual_visita <- PNADcIBGE::get_pnadc(year=2019, interview=1, defyear=2023, labels=TRUE, deflator=TRUE, design=FALSE)
 
 # Realizando coleta de lixo acumulada durante a obtenção dos microdados
 gc(verbose=FALSE, reset=FALSE, full=TRUE)
@@ -109,47 +109,70 @@ pnadc_anual_visita <- transform(pnadc_anual_visita, VD5008real_proprioano=ifelse
 pnadc_anual_visita <- transform(pnadc_anual_visita, VD5007real_ultimoano=ifelse(V2005=="Pensionista" | V2005=="Empregado(a) doméstico(a)" | V2005=="Parente do(a) empregado(a) doméstico(a)",NA,VD5007real_ultimoano))
 pnadc_anual_visita <- transform(pnadc_anual_visita, VD5008real_ultimoano=ifelse(V2005=="Pensionista" | V2005=="Empregado(a) doméstico(a)" | V2005=="Parente do(a) empregado(a) doméstico(a)",NA,VD5008real_ultimoano))
 
+# Criando variável de faixa de rendimento domiciliar per capita em valores reais
+salariominimo_proprioano <- 998
+salariominimo_ultimoano <- 1320
+pnadc_anual_visita <- transform(pnadc_anual_visita, VD5009real_proprioano=as.factor(x=ifelse(VD5008real_proprioano>=0 & VD5008real_proprioano<=salariominimo_proprioano/4,"Até ¼ salário mínimo",
+                                                                                             ifelse(VD5008real_proprioano>salariominimo_proprioano/4 & VD5008real_proprioano<=salariominimo_proprioano/2,"Mais de ¼ até ½ salário mínimo",
+                                                                                                    ifelse(VD5008real_proprioano>salariominimo_proprioano/2 & VD5008real_proprioano<=salariominimo_proprioano,"Mais de ½ até 1 salário mínimo",
+                                                                                                           ifelse(VD5008real_proprioano>salariominimo_proprioano & VD5008real_proprioano<=salariominimo_proprioano*2,"Mais de 1 até 2 salários mínimos",
+                                                                                                                  ifelse(VD5008real_proprioano>salariominimo_proprioano*2 & VD5008real_proprioano<=salariominimo_proprioano*3,"Mais de 2 até 3 salários mínimos",
+                                                                                                                         ifelse(VD5008real_proprioano>salariominimo_proprioano*3 & VD5008real_proprioano<=salariominimo_proprioano*5,"Mais de 3 até 5 salários mínimos",
+                                                                                                                                ifelse(VD5008real_proprioano>salariominimo_proprioano*5,"Mais de 5 salários mínimos",NA)))))))))
+pnadc_anual_visita <- transform(pnadc_anual_visita, VD5009real_ultimoano=as.factor(x=ifelse(VD5008real_ultimoano>=0 & VD5008real_ultimoano<=salariominimo_ultimoano/4,"Até ¼ salário mínimo",
+                                                                                            ifelse(VD5008real_ultimoano>salariominimo_ultimoano/4 & VD5008real_ultimoano<=salariominimo_ultimoano/2,"Mais de ¼ até ½ salário mínimo",
+                                                                                                   ifelse(VD5008real_ultimoano>salariominimo_ultimoano/2 & VD5008real_ultimoano<=salariominimo_ultimoano,"Mais de ½ até 1 salário mínimo",
+                                                                                                          ifelse(VD5008real_ultimoano>salariominimo_ultimoano & VD5008real_ultimoano<=salariominimo_ultimoano*2,"Mais de 1 até 2 salários mínimos",
+                                                                                                                 ifelse(VD5008real_ultimoano>salariominimo_ultimoano*2 & VD5008real_ultimoano<=salariominimo_ultimoano*3,"Mais de 2 até 3 salários mínimos",
+                                                                                                                        ifelse(VD5008real_ultimoano>salariominimo_ultimoano*3 & VD5008real_ultimoano<=salariominimo_ultimoano*5,"Mais de 3 até 5 salários mínimos",
+                                                                                                                               ifelse(VD5008real_ultimoano>salariominimo_ultimoano*5,"Mais de 5 salários mínimos",NA)))))))))
+pnadc_anual_visita$VD5009real_proprioano <- factor(x=pnadc_anual_visita$VD5009real_proprioano, levels=c("Até ¼ salário mínimo","Mais de ¼ até ½ salário mínimo","Mais de ½ até 1 salário mínimo","Mais de 1 até 2 salários mínimos","Mais de 2 até 3 salários mínimos","Mais de 3 até 5 salários mínimos","Mais de 5 salários mínimos"))
+pnadc_anual_visita$VD5009real_ultimoano <- factor(x=pnadc_anual_visita$VD5009real_ultimoano, levels=c("Até ¼ salário mínimo","Mais de ¼ até ½ salário mínimo","Mais de ½ até 1 salário mínimo","Mais de 1 até 2 salários mínimos","Mais de 2 até 3 salários mínimos","Mais de 3 até 5 salários mínimos","Mais de 5 salários mínimos"))
+
 # Realizando processo de incorporação do desenho amostral nos microdados
 pnadc_anual_visita <- tibble::as_tibble(x=pnadc_anual_visita)
 pnadc_anual_visita <- PNADcIBGE::pnadc_design(data_pnadc=pnadc_anual_visita)
 str(object=pnadc_anual_visita)
 
 # Calculando a massa do rendimento mensal real domiciliar a preços médios do ano
-print(x=rendimento_domiciliar_total_proprioano <- survey::svybys(formula=~VD5007real_proprioano, bys=~Pais+GR+UF, design=subset(pnadc_anual_visita, V2005=="Pessoa responsável pelo domicílio"), FUN=svytotal, na.rm=TRUE))
-print(x=list(cv(object=rendimento_domiciliar_total_proprioano[[1]]), cv(object=rendimento_domiciliar_total_proprioano[[2]]), cv(object=rendimento_domiciliar_total_proprioano[[3]])))
+print(x=rendimento_domiciliar_massa_proprioano <- survey::svybys(formula=~VD5007real_proprioano, bys=~Pais+GR+UF, design=subset(pnadc_anual_visita, V2005=="Pessoa responsável pelo domicílio"), FUN=svytotal, vartype=c("se","cv"), keep.names=FALSE, na.rm=TRUE))
 
 # Calculando o rendimento médio mensal real domiciliar a preços médios do ano
-print(x=rendimento_domiciliar_media_proprioano <- survey::svybys(formula=~VD5007real_proprioano, bys=~Pais+GR+UF, design=subset(pnadc_anual_visita, V2005=="Pessoa responsável pelo domicílio"), FUN=svymean, na.rm=TRUE))
-print(x=list(cv(object=rendimento_domiciliar_media_proprioano[[1]]), cv(object=rendimento_domiciliar_media_proprioano[[2]]), cv(object=rendimento_domiciliar_media_proprioano[[3]])))
+print(x=rendimento_domiciliar_media_proprioano <- survey::svybys(formula=~VD5007real_proprioano, bys=~Pais+GR+UF, design=subset(pnadc_anual_visita, V2005=="Pessoa responsável pelo domicílio"), FUN=svymean, vartype=c("se","cv"), keep.names=FALSE, na.rm=TRUE))
 
 # Calculando a massa do rendimento mensal real domiciliar per capita a preços médios do ano (SIDRA - Tabela 7428)
-print(x=rendimento_domiciliar_per_capita_total_proprioano <- survey::svybys(formula=~VD5008real_proprioano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svytotal, na.rm=TRUE))
-print(x=list(cv(object=rendimento_domiciliar_per_capita_total_proprioano[[1]]), cv(object=rendimento_domiciliar_per_capita_total_proprioano[[2]]), cv(object=rendimento_domiciliar_per_capita_total_proprioano[[3]])))
+print(x=rendimento_domiciliar_per_capita_massa_proprioano <- survey::svybys(formula=~VD5008real_proprioano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svytotal, vartype=c("se","cv"), keep.names=FALSE, na.rm=TRUE))
 
 # Calculando o rendimento médio mensal real domiciliar per capita a preços médios do ano (SIDRA - Tabela 7531)
-print(x=rendimento_domiciliar_per_capita_media_proprioano <- survey::svybys(formula=~VD5008real_proprioano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svymean, na.rm=TRUE))
-print(x=list(cv(object=rendimento_domiciliar_per_capita_media_proprioano[[1]]), cv(object=rendimento_domiciliar_per_capita_media_proprioano[[2]]), cv(object=rendimento_domiciliar_per_capita_media_proprioano[[3]])))
+print(x=rendimento_domiciliar_per_capita_media_proprioano <- survey::svybys(formula=~VD5008real_proprioano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svymean, vartype=c("se","cv"), keep.names=FALSE, na.rm=TRUE))
+
+# Calculando o total de pessoas nas faixas de rendimento domiciliar per capita a preços médios do ano
+print(x=faixa_rendimento_domiciliar_total_proprioano <- survey::svybys(formula=~VD5009real_proprioano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svytotal, vartype=c("se","cv"), keep.names=FALSE, na.rm=TRUE))
+
+# Calculando a proporcao de pessoas nas faixas de rendimento domiciliar per capita a preços médios do ano
+print(x=faixa_rendimento_domiciliar_proporcao_proprioano <- survey::svybys(formula=~VD5009real_proprioano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svymean, vartype=c("se","cv"), keep.names=FALSE, na.rm=TRUE))
 
 # Calculando a massa do rendimento mensal real domiciliar a preços médios do último ano
-print(x=rendimento_domiciliar_total_ultimoano <- survey::svybys(formula=~VD5007real_ultimoano, bys=~Pais+GR+UF, design=subset(pnadc_anual_visita, V2005=="Pessoa responsável pelo domicílio"), FUN=svytotal, na.rm=TRUE))
-print(x=list(cv(object=rendimento_domiciliar_total_ultimoano[[1]]), cv(object=rendimento_domiciliar_total_ultimoano[[2]]), cv(object=rendimento_domiciliar_total_ultimoano[[3]])))
+print(x=rendimento_domiciliar_massa_ultimoano <- survey::svybys(formula=~VD5007real_ultimoano, bys=~Pais+GR+UF, design=subset(pnadc_anual_visita, V2005=="Pessoa responsável pelo domicílio"), FUN=svytotal, vartype=c("se","cv"), keep.names=FALSE, na.rm=TRUE))
 
 # Calculando o rendimento médio mensal real domiciliar a preços médios do último ano
-print(x=rendimento_domiciliar_media_ultimoano <- survey::svybys(formula=~VD5007real_ultimoano, bys=~Pais+GR+UF, design=subset(pnadc_anual_visita, V2005=="Pessoa responsável pelo domicílio"), FUN=svymean, na.rm=TRUE))
-print(x=list(cv(object=rendimento_domiciliar_media_ultimoano[[1]]), cv(object=rendimento_domiciliar_media_ultimoano[[2]]), cv(object=rendimento_domiciliar_media_ultimoano[[3]])))
+print(x=rendimento_domiciliar_media_ultimoano <- survey::svybys(formula=~VD5007real_ultimoano, bys=~Pais+GR+UF, design=subset(pnadc_anual_visita, V2005=="Pessoa responsável pelo domicílio"), FUN=svymean, vartype=c("se","cv"), keep.names=FALSE, na.rm=TRUE))
 
 # Calculando a massa do rendimento mensal real domiciliar per capita a preços médios do último ano (SIDRA - Tabela 7427)
-print(x=rendimento_domiciliar_per_capita_total_ultimoano <- survey::svybys(formula=~VD5008real_ultimoano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svytotal, na.rm=TRUE))
-print(x=list(cv(object=rendimento_domiciliar_per_capita_total_ultimoano[[1]]), cv(object=rendimento_domiciliar_per_capita_total_ultimoano[[2]]), cv(object=rendimento_domiciliar_per_capita_total_ultimoano[[3]])))
+print(x=rendimento_domiciliar_per_capita_massa_ultimoano <- survey::svybys(formula=~VD5008real_ultimoano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svytotal, vartype=c("se","cv"), keep.names=FALSE, na.rm=TRUE))
 
 # Calculando o rendimento médio mensal real domiciliar per capita a preços médios do último ano (SIDRA - Tabela 7533)
-print(x=rendimento_domiciliar_per_capita_media_ultimoano <- survey::svybys(formula=~VD5008real_ultimoano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svymean, na.rm=TRUE))
-print(x=list(cv(object=rendimento_domiciliar_per_capita_media_ultimoano[[1]]), cv(object=rendimento_domiciliar_per_capita_media_ultimoano[[2]]), cv(object=rendimento_domiciliar_per_capita_media_ultimoano[[3]])))
+print(x=rendimento_domiciliar_per_capita_media_ultimoano <- survey::svybys(formula=~VD5008real_ultimoano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svymean, vartype=c("se","cv"), keep.names=FALSE, na.rm=TRUE))
+
+# Calculando o total de pessoas nas faixas de rendimento domiciliar per capita a preços médios do ultimo ano
+print(x=faixa_rendimento_domiciliar_total_ultimoano <- survey::svybys(formula=~VD5009real_ultimoano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svytotal, vartype=c("se","cv"), keep.names=FALSE, na.rm=TRUE))
+
+# Calculando a proporcao de pessoas nas faixas de rendimento domiciliar per capita a preços médios do ultimo ano
+print(x=faixa_rendimento_domiciliar_proporcao_ultimoano <- survey::svybys(formula=~VD5009real_ultimoano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svymean, vartype=c("se","cv"), keep.names=FALSE, na.rm=TRUE))
 
 # Calculando o índice de Gini do rendimento mensal real domiciliar per capita per capita a preços médios do ano (SIDRA - Tabela 7435)
 pnadc_anual_visita <- convey::convey_prep(design=pnadc_anual_visita)
-print(x=indice_gini <- survey::svybys(formula=~VD5008real_proprioano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svygini, na.rm=TRUE))
-print(x=list(cv(object=indice_gini[[1]]), cv(object=indice_gini[[2]]), cv(object=indice_gini[[3]])))
+print(x=indice_gini_rendimento_domiciliar <- survey::svybys(formula=~VD5008real_proprioano, bys=~Pais+GR+UF, design=pnadc_anual_visita, FUN=svygini, vartype=c("se","cv"), keep.names=FALSE, na.rm=TRUE))
 
 # Calculando proxy do coeficiente de desiquilíbrio regional com base no rendimento médio mensal real domiciliar per capita a preços médios do ano
 print(x=coeficiente_desequilibrio_regional_norte <- round(x=min(max(0,rendimento_domiciliar_per_capita_media_proprioano[[2]]$VD5008real_proprioano[1]/rendimento_domiciliar_per_capita_media_proprioano[[1]]$VD5008real_proprioano[1]),1), digits=2))
