@@ -73,7 +73,18 @@ library(package="convey", verbose=TRUE)
 help(topic="get_pnadc", package="PNADcIBGE")
 
 # Obtendo microdados anuais por visita da PNAD Contínua (PNADcIBGE >= 0.6.0)
-pnadc_anual_visita <- PNADcIBGE::get_pnadc(year=2019, interview=1, defyear=2023, labels=TRUE, deflator=TRUE, design=FALSE)
+ano <- 2019
+ano_deflator <- 2023
+{
+  if(ano %in% c(2020:2022))
+  {
+    pnadc_anual_visita <- PNADcIBGE::get_pnadc(year=ano, interview=5, defyear=ano_deflator, labels=TRUE, deflator=TRUE, design=FALSE)
+  }
+  else
+  {
+    pnadc_anual_visita <- PNADcIBGE::get_pnadc(year=ano, interview=1, defyear=ano_deflator, labels=TRUE, deflator=TRUE, design=FALSE)
+  }
+}
 
 # Realizando coleta de lixo acumulada durante a obtenção dos microdados
 gc(verbose=FALSE, reset=FALSE, full=TRUE)
